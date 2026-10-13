@@ -192,29 +192,35 @@
 	 * @returns {string} HTML string
 	 */
 	StripeCartUI.prototype.renderItem = function(item) {
-		const imageHtml = item.image
-			? `<img src="${item.image}" alt="${item.name}" class="cart-item-image">`
+		// Cart data comes from localStorage, so escape everything before it hits innerHTML
+		const name = escapeHtml(item.name);
+		const priceId = escapeHtml(item.priceId);
+		const quantity = parseInt(item.quantity, 10) || 0;
+		const image = item.image && /^(https?:)?\/\/|^\//.test(item.image) ? escapeHtml(item.image) : null;
+
+		const imageHtml = image
+			? `<img src="${image}" alt="${name}" class="cart-item-image">`
 			: '<div class="cart-item-image-placeholder"></div>';
 
 		return `
-			<div class="cart-item" data-price-id="${item.priceId}">
+			<div class="cart-item" data-price-id="${priceId}">
 				<div class="cart-item-image-container">
 					${imageHtml}
 				</div>
 				<div class="cart-item-details">
-					<h4 class="cart-item-name">${item.name}</h4>
-					<div class="cart-item-price">${this.formatPrice(item.price)}</div>
+					<h4 class="cart-item-name">${name}</h4>
+					<div class="cart-item-price">${this.formatPrice(Number(item.price) || 0)}</div>
 					<div class="cart-item-quantity">
-						<button class="cart-qty-btn" data-cart-decrease="${item.priceId}" aria-label="Decrease quantity">
+						<button class="cart-qty-btn" data-cart-decrease="${priceId}" aria-label="Decrease quantity">
 							<span>−</span>
 						</button>
-						<span class="cart-qty-value">${item.quantity}</span>
-						<button class="cart-qty-btn" data-cart-increase="${item.priceId}" aria-label="Increase quantity">
+						<span class="cart-qty-value">${quantity}</span>
+						<button class="cart-qty-btn" data-cart-increase="${priceId}" aria-label="Increase quantity">
 							<span>+</span>
 						</button>
 					</div>
 				</div>
-				<button class="cart-item-remove" data-cart-remove="${item.priceId}" aria-label="Remove item">
+				<button class="cart-item-remove" data-cart-remove="${priceId}" aria-label="Remove item">
 					<span>×</span>
 				</button>
 			</div>
@@ -245,6 +251,20 @@
 	StripeCartUI.prototype.formatPrice = function(price) {
 		return this.config.currencySymbol + price.toFixed(2);
 	};
+
+	/**
+	 * Escape a value for use in HTML text or a quoted attribute
+	 * @param {*} value
+	 * @returns {string}
+	 */
+	function escapeHtml(value) {
+		return String(value == null ? '' : value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+	}
 
 	// Export to window
 	window.StripeCartUI = StripeCartUI;
